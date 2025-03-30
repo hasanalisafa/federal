@@ -1,4 +1,5 @@
 ﻿import json
+import os
 from datetime import datetime
 import telegram
 import requests
@@ -117,9 +118,9 @@ def main():
     updater.start_polling()
     updater.idle()
 
-# Ensure the Flask app and the Telegram bot work together
+# Ensure the Flask app and the Telegram bot work together and the app runs on the correct host and port for Railway deployment
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))  # Listen on all IPs and the correct port
 
 # Separate logic to book the appointment
 def solve_captcha_and_book_appointment():
