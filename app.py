@@ -46,10 +46,12 @@ def solve_captcha(captcha_image_url):
 
 # Function to send messages via Telegram
 def send_telegram_message(chat_id, message):
+    print(f"Sending message to {chat_id}: {message}")  # Debugging line
     bot.send_message(chat_id=chat_id, text=message)
 
 # Function to handle user details and book an appointment
 def handle_appointment(update, context):
+    print(f"Received message: {update.message.text}")  # Debugging line
     user_chat_id = update.message.chat_id
     user_name = update.message.from_user.first_name
 
@@ -103,10 +105,12 @@ def handle_appointment(update, context):
 
 # Function to start the bot
 def start(update, context):
+    print(f"Received /start command!")  # Debugging line
     send_telegram_message(update.message.chat_id, "Welcome! Please enter your details to proceed with the booking.")
 
 # Main function for Telegram bot
 def main():
+    print("Bot is starting...")  # Debugging line
     updater = Updater(TOKEN, use_context=True)
     dispatcher = updater.dispatcher
 
