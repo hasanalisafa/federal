@@ -6,22 +6,26 @@ import requests
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from telegram import Bot
+from telegram.ext import CommandHandler, MessageHandler, Filters, Updater
 from dotenv import load_dotenv
 import os
 
-# Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
-# Retrieve sensitive information from .env
-API_KEY = os.getenv('2CAPTCHA_API_KEY')
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+# 2Captcha API Key from environment variables
+API_KEY = os.getenv('CAPTCHA_API_KEY')
+
+# Telegram Bot Token from environment variables
+TOKEN = os.getenv('TELEGRAM_TOKEN')
 chat_id = os.getenv('TELEGRAM_CHAT_ID')
 
 # Initialize the bot
-bot = telegram.Bot(token=TOKEN)
+bot = Bot(token=TOKEN)
 
+# Function to handle CAPTCHA solving
 def solve_captcha(captcha_image_url):
-    """Solve CAPTCHA using 2Captcha"""
     url = 'http://2captcha.com/in.php'
     data = {
         'key': API_KEY,
@@ -42,12 +46,12 @@ def solve_captcha(captcha_image_url):
             return None
     return None
 
-# Send message via Telegram
-def send_telegram_message(message):
+# Function to send messages via Telegram
+def send_telegram_message(chat_id, message):
     bot.send_message(chat_id=chat_id, text=message)
 
+# Function to handle user details and book an appointment
 def handle_appointment(update, context):
-    """Handle user details and booking"""
     user_chat_id = update.message.chat_id
     user_name = update.message.from_user.first_name
 
@@ -103,46 +107,6 @@ def handle_appointment(update, context):
 def start(update, context):
     send_telegram_message(update.message.chat_id, "Welcome! Please enter your details to proceed with the booking.")
 
-# Function to solve CAPTCHA and book appointment using Selenium
-def solve_captcha_and_book_appointment():
-    """Solve CAPTCHA and book appointment using Selenium"""
-    driver = webdriver.Chrome()
-    driver.get("https://servicos.dpf.gov.br/agenda-web/acessar")
-    
-    try:
-        # Fill out the form
-        service_dropdown = driver.find_element(By.NAME, "service")
-        service_dropdown.send_keys("Segurança Privada")  # Service type (adjust if needed)
-
-        code_input = driver.find_element(By.NAME, "code")
-        code_input.send_keys("12345")  # Request code (replace with actual)
-
-        birthdate_input = driver.find_element(By.NAME, "birthdate")
-        birthdate_input.send_keys("01/01/1990")  # Date of birth (replace with actual)
-
-        captcha_image_url = driver.find_element(By.CSS_SELECTOR, "img[src*='captcha']").get_attribute("src")
-        captcha_solution = solve_captcha(captcha_image_url)
-
-        if captcha_solution is None:
-            send_telegram_message("Failed to solve CAPTCHA. Please try again.")
-            driver.quit()
-            return
-
-        captcha_input = driver.find_element(By.NAME, "captcha_response")
-        captcha_input.send_keys(captcha_solution)
-
-        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
-        submit_button.click()
-
-        time.sleep(5)  # Wait for the form to submit
-
-        send_telegram_message("Appointment booked successfully!")
-        driver.quit()
-
-    except Exception as e:
-        send_telegram_message(f"An error occurred while attempting to book the appointment: {str(e)}")
-        driver.quit()
-
 # Main function for Telegram bot
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -156,5 +120,15 @@ def main():
     updater.start_polling()
     updater.idle()
 
-if __name__ == '__main__':
-    main()
+# Starting the Flask app
+app = Flask(__name__)
+
+@app.route("/", methods=["GET", "POST"])
+def home():
+    if request.method == "POST":
+        # Handle POST request logic here (you can call your appointment function or actions)
+        pass
+    return render_template("index.html")
+
+if __name__ == "__main__":
+    app.run(debug=True)
