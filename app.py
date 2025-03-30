@@ -16,7 +16,7 @@ app = Flask(__name__)
 API_KEY = '3b939b4b7093b70ef59defb145ebd27f'
 
 # Telegram Bot Token
-TOKEN = '7916508457:AAG286xWn621PwrnisliRg80Te3llx_t5xU'
+TOKEN = '7784427346:AAGsIu8re1MWZMGaI1QPo51WLpsoxAhbm4'
 chat_id = '5316684496'  # Enter your chat ID here for notifications
 
 # Initialize the bot
