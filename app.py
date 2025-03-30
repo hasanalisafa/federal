@@ -1,26 +1,23 @@
 ﻿import json
 import os
 from datetime import datetime
-import telegram
 import requests
-from flask import Flask, render_template, request
-from telegram import Bot
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import ParseMode
+from aiogram.utils import executor
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
-
-app = Flask(__name__)
 
 # 2Captcha API Key
 API_KEY = '3b939b4b7093b70ef59defb145ebd27f'
 
 # Telegram Bot Token
-TOKEN = '7784427346:AAGsIu8re1MWZMGaI1QPo51WLpsoxAhbm4'
-chat_id = '5316684496'  # Enter your chat ID here for notifications
+TOKEN = '7916508457:AAG286xWn621PwrnisliRg80Te3llx_t5xU'
 
 # Initialize the bot
 bot = Bot(token=TOKEN)
+dp = Dispatcher(bot)
 
 # Function to handle CAPTCHA solving
 def solve_captcha(captcha_image_url):
@@ -45,30 +42,35 @@ def solve_captcha(captcha_image_url):
     return None
 
 # Function to send messages via Telegram
-def send_telegram_message(chat_id, message):
-    bot.send_message(chat_id=chat_id, text=message)
+async def send_telegram_message(chat_id, message):
+    await bot.send_message(chat_id=chat_id, text=message)
 
 # Function to handle user details and book an appointment
-def handle_appointment(update, context):
-    user_chat_id = update.message.chat_id
-    user_name = update.message.from_user.first_name
+@dp.message_handler(commands=['start'])
+async def cmd_start(message: types.Message):
+    await message.answer("Welcome! Please enter your details to proceed with the booking.")
+
+@dp.message_handler(lambda message: True)
+async def handle_appointment(message: types.Message):
+    user_chat_id = message.chat.id
+    user_name = message.from_user.first_name
 
     # Collect details from user
-    send_telegram_message(user_chat_id, "Please enter the service type (e.g., Segurança Privada):")
-    service = update.message.text
+    await send_telegram_message(user_chat_id, "Please enter the service type (e.g., Segurança Privada):")
+    service = message.text
 
-    send_telegram_message(user_chat_id, "Please enter the request number:")
-    code = update.message.text
+    await send_telegram_message(user_chat_id, "Please enter the request number:")
+    code = message.text
 
-    send_telegram_message(user_chat_id, "Please enter your date of birth (dd/mm/yyyy):")
-    birthdate = update.message.text
+    await send_telegram_message(user_chat_id, "Please enter your date of birth (dd/mm/yyyy):")
+    birthdate = message.text
 
-    send_telegram_message(user_chat_id, "Please enter the private invitation code:")
-    invite = update.message.text
+    await send_telegram_message(user_chat_id, "Please enter the private invitation code:")
+    invite = message.text
 
     # Validation
     if invite != "1924":
-        send_telegram_message(user_chat_id, "Invalid invite code. Please try again.")
+        await send_telegram_message(user_chat_id, "Invalid invite code. Please try again.")
         return
 
     # Save data to users.json
@@ -94,31 +96,12 @@ def handle_appointment(update, context):
     with open('users.json', 'w', encoding='utf-8') as f:
         json.dump(users, f, ensure_ascii=False, indent=2)
 
-    send_telegram_message(user_chat_id, "Booking process initiated! Processing details...")
+    await send_telegram_message(user_chat_id, "Booking process initiated! Processing details...")
 
     # Call the function to process the appointment (CAPTCHA, etc.)
     solve_captcha_and_book_appointment()
 
-    send_telegram_message(user_chat_id, "Your appointment has been successfully booked!")
-
-# Function to start the bot
-async def start(update, context):
-    await update.message.reply_text("Welcome! Please enter your details to proceed with the booking.")
-
-# Main function for Telegram bot
-def main():
-    application = Application.builder().token(TOKEN).build()
-
-    # Add handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_appointment))
-
-    # Start the bot
-    application.run_polling()
-
-# Ensure the Flask app and the Telegram bot work together and the app runs on the correct host and port for Railway deployment
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))  # Listen on all IPs and the correct port
+    await send_telegram_message(user_chat_id, "Your appointment has been successfully booked!")
 
 # Separate logic to book the appointment
 def solve_captcha_and_book_appointment():
@@ -159,3 +142,7 @@ def solve_captcha_and_book_appointment():
     except Exception as e:
         send_telegram_message(f"An error occurred while attempting to book the appointment: {str(e)}")
         driver.quit()
+
+# Run the bot
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
