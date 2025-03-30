@@ -4,19 +4,20 @@ import telegram
 import requests
 from flask import Flask, render_template, request
 from telegram import Bot
-from telegram.ext import Updater, CommandHandler, MessageHandler, filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
+import os
 
 app = Flask(__name__)
 
 # 2Captcha API Key
-API_KEY = '3b939b4b7093b70ef59defb145ebd27f'
+API_KEY = os.getenv("2CAPTCHA_API_KEY")  # Set this in your Railway environment variables
 
 # Telegram Bot Token
-TOKEN = '7916508457:AAG286xWn621PwrnisliRg80Te3llx_t5xU'
-chat_id = '5316684496'  # Enter your chat ID here for notifications
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # Set this in your Railway environment variables
+chat_id = os.getenv("TELEGRAM_CHAT_ID")  # Set this in your Railway environment variables
 
 # Initialize the bot
 bot = Bot(token=TOKEN)
@@ -111,7 +112,7 @@ def main():
 
     # Add handlers
     dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(MessageHandler(filters.Filters.text & ~filters.Filters.command, handle_appointment))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_appointment))
 
     # Start the bot
     updater.start_polling()
@@ -119,7 +120,7 @@ def main():
 
 # Ensure the Flask app and the Telegram bot work together
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 # Separate logic to book the appointment
 def solve_captcha_and_book_appointment():
