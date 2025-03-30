@@ -1,25 +1,20 @@
-﻿from flask import Flask, render_template, request
-import json
+﻿import json
 from datetime import datetime
 import telegram
 import requests
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
+from flask import Flask, render_template, request
 from telegram import Bot
-from telegram.ext import CommandHandler, MessageHandler, Filters, Updater
-from dotenv import load_dotenv
-import os
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from werkzeug.utils import escape
 
-# Load environment variables from .env file
-load_dotenv()
+app = Flask(__name__)
 
-# 2Captcha API Key from environment variables
-API_KEY = os.getenv('CAPTCHA_API_KEY')
+# 2Captcha API Key
+API_KEY = '3b939b4b7093b70ef59defb145ebd27f'
 
-# Telegram Bot Token from environment variables
-TOKEN = os.getenv('TELEGRAM_TOKEN')
-chat_id = os.getenv('TELEGRAM_CHAT_ID')
+# Telegram Bot Token
+TOKEN = '7916508457:AAG286xWn621PwrnisliRg80Te3llx_t5xU'
+chat_id = '5316684496'  # Enter your chat ID here for notifications
 
 # Initialize the bot
 bot = Bot(token=TOKEN)
@@ -120,15 +115,46 @@ def main():
     updater.start_polling()
     updater.idle()
 
-# Starting the Flask app
-app = Flask(__name__)
-
-@app.route("/", methods=["GET", "POST"])
-def home():
-    if request.method == "POST":
-        # Handle POST request logic here (you can call your appointment function or actions)
-        pass
-    return render_template("index.html")
-
-if __name__ == "__main__":
+# Ensure the Flask app and the Telegram bot work together
+if __name__ == '__main__':
     app.run(debug=True)
+
+# Separate logic to book the appointment
+def solve_captcha_and_book_appointment():
+    """Solve CAPTCHA and book appointment using Selenium"""
+    driver = webdriver.Chrome()
+    driver.get("https://servicos.dpf.gov.br/agenda-web/acessar")
+    
+    try:
+        # Fill out the form
+        service_dropdown = driver.find_element(By.NAME, "service")
+        service_dropdown.send_keys("Segurança Privada")  # Service type (adjust if needed)
+
+        code_input = driver.find_element(By.NAME, "code")
+        code_input.send_keys("12345")  # Request code (replace with actual)
+
+        birthdate_input = driver.find_element(By.NAME, "birthdate")
+        birthdate_input.send_keys("01/01/1990")  # Date of birth (replace with actual)
+
+        captcha_image_url = driver.find_element(By.CSS_SELECTOR, "img[src*='captcha']").get_attribute("src")
+        captcha_solution = solve_captcha(captcha_image_url)
+
+        if captcha_solution is None:
+            send_telegram_message("Failed to solve CAPTCHA. Please try again.")
+            driver.quit()
+            return
+
+        captcha_input = driver.find_element(By.NAME, "captcha_response")
+        captcha_input.send_keys(captcha_solution)
+
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+        submit_button.click()
+
+        time.sleep(5)  # Wait for the form to submit
+
+        send_telegram_message("Appointment booked successfully!")
+        driver.quit()
+
+    except Exception as e:
+        send_telegram_message(f"An error occurred while attempting to book the appointment: {str(e)}")
+        driver.quit()
