@@ -1,6 +1,5 @@
 flask
-selenium
 requests
+selenium
 python-telegram-bot
 pyhton-dotenv
-six
