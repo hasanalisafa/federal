@@ -2,4 +2,4 @@ flask
 requests
 selenium
 python-telegram-bot
-pyhton-dotenv
+pyhton-dotenv==0.19.0
