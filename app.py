@@ -4,8 +4,10 @@ import telegram
 import requests
 from flask import Flask, render_template, request
 from telegram import Bot
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from werkzeug.utils import escape
+from telegram.ext import Updater, CommandHandler, MessageHandler, filters
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
 
 app = Flask(__name__)
 
@@ -109,7 +111,7 @@ def main():
 
     # Add handlers
     dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_appointment))
+    dispatcher.add_handler(MessageHandler(filters.Filters.text & ~filters.Filters.command, handle_appointment))
 
     # Start the bot
     updater.start_polling()
